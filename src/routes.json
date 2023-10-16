@@ -1,0 +1,6 @@
+[
+    {
+        "url": "example.hostname.com",
+        "route": "localhost:3000"
+    }
+]
