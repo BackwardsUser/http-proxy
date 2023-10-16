@@ -1,5 +1,5 @@
 # http proxy
-A simple reverse proxy for routing hypertext files from different ports
+A simple reverse proxy for routing hypertext files from different ports to http
 
 ## Dependencies
 
