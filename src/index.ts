@@ -31,22 +31,18 @@ app.use(async (req, res, next) => {
     const connectionReq = req.headers.host;
     if (connectionReq == undefined) return connectionFailed(res);
     console.log(`Request from: ${req.headers.host}.`);
-    var proxyMade = false;
-    for (var i = 0; i <= routes.length; i++) {
-        console.log(proxyMade)
-        if (i == routes.length && proxyMade == false) {
-            return connectionFailed(res);
-        } 
-        if (connectionReq == routes[i].url) {
-            var serverRes = await getServerRes(routes[i].route);
-            if (serverRes == false) return false;
-            var newRoute = `http://${routes[i].route}/`;
-            proxyMade = true;
-            proxy.web(req, res, { target: newRoute }, (err) => {
-                if (err) throw err;
-            })
-            return false;
-        }
+    const filteredRoutes = routes.filter(route => route.url === connectionReq);
+    let proxyMade = false;
+    if (filteredRoutes.length > 0 && filteredRoutes.length < 2) {
+        const route = filteredRoutes[0];
+        const serverRes = await getServerRes(route.route);
+        if (!serverRes) return connectionFailed(res);
+        const newRoute = `http://${route.route}/`;
+        proxyMade = true;
+        proxy.web(req, res, { target: newRoute });
+        return false;
+    } else {
+        console.error(`Too many similar routes to: ${connectionReq}`)
     }
 })
 

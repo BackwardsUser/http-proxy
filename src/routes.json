@@ -2,5 +2,9 @@
     {
         "url": "example.hostname.com",
         "route": "localhost:3000"
+    },
+    {
+        "url": "localhost",
+        "route": "localhost:2000"
     }
 ]
