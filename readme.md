@@ -1,6 +1,9 @@
 # http proxy
 A simple reverse proxy for routing hypertext files from different ports to http
 
+# Important
+This proxy currently only supports webpages hosted through Express, working on fixing this.
+
 ## Dependencies
 
 * NodeJS
@@ -26,7 +29,8 @@ A route is written as following:
 ```
 all of the routes in the routes.json file are contained within an array,  
 to add or remove one just enter the above with the url being the url to intercept and the route being where to send users.  
-the entire object should be listed with a comma following the closing curly bracket (}).
+the entire object should be listed with a comma following the closing curly bracket (}).  
+The app sends a get request to pages root (/) to make sure the webpage is online, this is to prevent the proxy from crashing due to offline servers.
 
 ## Contributions
 Feel free to make a Pull request, my layout is rather simple,  
