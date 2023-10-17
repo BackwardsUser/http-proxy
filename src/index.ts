@@ -16,9 +16,10 @@ function getServerRes(ip: string) {
             if (statusCode == 200) return res(true)
             else return res(false);
         }).on("error", (err) => {
+            console.log(err)
             return res(false);
-        })
-    })
+        });
+    });
 }
 
 function connectionFailed(res: any) {
@@ -31,18 +32,40 @@ app.use(async (req, res, next) => {
     const connectionReq = req.headers.host;
     if (connectionReq == undefined) return connectionFailed(res);
     console.log(`Request from: ${req.headers.host}.`);
-    const filteredRoutes = routes.filter(route => route.url === connectionReq);
+    const filteredRoutes = routes.filter(route => route.url.endsWith(connectionReq));
     let proxyMade = false;
     if (filteredRoutes.length > 0 && filteredRoutes.length < 2) {
         const route = filteredRoutes[0];
         const serverRes = await getServerRes(route.route);
         if (!serverRes) return connectionFailed(res);
         const newRoute = `http://${route.route}/`;
-        proxyMade = true;
-        proxy.web(req, res, { target: newRoute });
+        try {
+            proxy.web(req, res, { target: newRoute });
+            proxyMade = true;
+        } catch (e) {
+            console.log(e);
+            res.sendStatus(500);
+        }
         return false;
     } else {
-        console.error(`Too many similar routes to: ${connectionReq}`)
+        const doubleFilter = routes.filter(route => route.url.startsWith(connectionReq));
+        if (doubleFilter.length > 0 && doubleFilter.length < 2) {
+            const route = doubleFilter[0];
+            const serverRes = await getServerRes(route.route);
+            if (!serverRes) return connectionFailed(res);
+            const newRoute = `http://${route.route}/`;
+            try {
+                proxy.web(req, res, { target: newRoute });
+                proxyMade = true;
+            } catch (e) {
+                console.log(e);
+                res.sendStatus(500);
+            }
+            return false;
+        } else {
+            console.log(`Too many of similar url: ${connectionReq}.`)
+            connectionFailed(res)
+        }
     }
 })
 
