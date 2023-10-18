@@ -1,74 +1,72 @@
 import http from "node:http";
 import express from "express";
-import { route } from "./types";
-import { join } from "node:path";
+import {route} from "./types";
+import {join} from "node:path";
 import httpProxy from "http-proxy";
-import { readFileSync } from "node:fs";
+import {readFileSync} from "node:fs";
+import chalk from "chalk";
 
 const app = express();
 const proxy = httpProxy.createProxyServer();
 const routes: route[] = JSON.parse(readFileSync(join(__dirname, "routes.json")).toString());
 
 function getServerRes(ip: string) {
-    return new Promise((res) => {
-        http.get(`http://${ip}`, (response) => {
-            const { statusCode } = response;
-            if (statusCode == 200) return res(true)
-            else return res(false);
-        }).on("error", (err) => {
-            console.log(err)
-            return res(false);
-        });
+	return new Promise((res) => {
+		http.get(ip, (response) => {
+			const {statusCode} = response;
+			if (statusCode == 200) return res(true)
+			else return res(false);
+		}).on("error", (err) => {
+			return res(false);
+		});
+	});
+}
+
+function httpify(url: string): string {
+    return `http://${url}`;
+}
+
+function findOverlap(a: any[], b: any[]) {
+    const out: any[] = [];
+    a.forEach(item => {
+        if (b.includes(item)) {
+            out.push(item);
+        }
     });
+    return out;
 }
 
-function connectionFailed(res: any) {
-    console.log("Failed to connect");
-    res.sendStatus(404);
-    return false;
-}
-
-app.use(async (req, res, next) => {
-    const connectionReq = req.headers.host;
-    if (connectionReq == undefined) return connectionFailed(res);
-    console.log(`Request from: ${req.headers.host}.`);
-    const filteredRoutes = routes.filter(route => route.url.endsWith(connectionReq));
-    let proxyMade = false;
-    if (filteredRoutes.length > 0 && filteredRoutes.length < 2) {
-        const route = filteredRoutes[0];
-        const serverRes = await getServerRes(route.route);
-        if (!serverRes) return connectionFailed(res);
-        const newRoute = `http://${route.route}/`;
-        try {
-            proxy.web(req, res, { target: newRoute });
-            proxyMade = true;
-        } catch (e) {
-            console.log(e);
-            res.sendStatus(500);
-        }
-        return false;
-    } else {
-        const doubleFilter = routes.filter(route => route.url.startsWith(connectionReq));
-        if (doubleFilter.length > 0 && doubleFilter.length < 2) {
-            const route = doubleFilter[0];
-            const serverRes = await getServerRes(route.route);
-            if (!serverRes) return connectionFailed(res);
-            const newRoute = `http://${route.route}/`;
-            try {
-                proxy.web(req, res, { target: newRoute });
-                proxyMade = true;
-            } catch (e) {
-                console.log(e);
-                res.sendStatus(500);
+async function main(connectionReq: any, req: any, res: any) {
+    const endFilter = routes.filter(route => route.url.endsWith(connectionReq));
+    const startFilter = routes.filter(route => route.url.startsWith(connectionReq));
+    const urls = findOverlap(endFilter, startFilter);
+    switch (urls.length) {
+        case 0:
+            res.sendStatus(404);
+            console.warn(chalk.yellow(`No route setup for: ${connectionReq}.`));
+            break;
+        case 1:
+            if (await getServerRes(httpify(urls[0].route)) === false) {
+                res.sendStatus(503)
+                console.warn(chalk.red(`Cannot reach route: ${urls[0].route}.`));
+                break;
             }
-            return false;
-        } else {
-            console.log(`Too many of similar url: ${connectionReq}.`)
-            connectionFailed(res)
-        }
+            proxy.web(req, res, { target: httpify(urls[0].route) });
+            break;
+        default:
+            res.sendStatus(500)
+            console.warn(chalk.red(`Multiple routes for: ${connectionReq}.\nAll Routes:\n${urls}`));
+            break;
     }
+}
+
+app.use((req, res, next) => {
+	const connectionReq = req.headers.host;
+	if (connectionReq == undefined) return res.sendStatus(400)
+	console.log(`Request from: ${req.headers.host}.`);
+    main(connectionReq, req, res);
 })
 
 app.listen(80, () => {
-    console.log("App listening on port 80");
+	console.log("App listening on port 80");
 })
