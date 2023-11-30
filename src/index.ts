@@ -1,14 +1,16 @@
 import http from "node:http";
 import express from "express";
-import {route} from "./types";
+import {route, dev_route} from "./types";
 import {join} from "node:path";
 import httpProxy from "http-proxy";
-import {readFileSync} from "node:fs";
+import {readFileSync, readdirSync} from "node:fs";
 import chalk from "chalk";
 
 const app = express();
 const proxy = httpProxy.createProxyServer();
-const routes: route[] = JSON.parse(readFileSync(join(__dirname, "routes.json")).toString());
+
+const routes: route[] = JSON.parse(readFileSync(join(__dirname, "routes", "routes.json")).toString());
+const dev_routes: dev_route[] = JSON.parse(readFileSync(join(__dirname, "routes", "dev-routes.json")).toString())
 
 function getServerRes(ip: string) {
 	return new Promise((res) => {
@@ -23,7 +25,8 @@ function getServerRes(ip: string) {
 }
 
 function httpify(url: string): string {
-    return `http://${url}`;
+    if (url.startsWith("http")) return url
+    else return `http://${url}`;
 }
 
 function findOverlap(a: any[], b: any[]) {
@@ -37,9 +40,9 @@ function findOverlap(a: any[], b: any[]) {
 }
 
 async function main(connectionReq: any, req: any, res: any) {
-    const endFilter = routes.filter(route => route.url.endsWith(connectionReq));
-    const startFilter = routes.filter(route => route.url.startsWith(connectionReq));
-    const urls = findOverlap(endFilter, startFilter);
+    const end_filter = routes.filter(route => route.url.endsWith(connectionReq));
+    const start_filter = routes.filter(route => route.url.startsWith(connectionReq));
+    const urls = findOverlap(end_filter, start_filter);
     switch (urls.length) {
         case 0:
             res.sendStatus(404);
@@ -60,13 +63,67 @@ async function main(connectionReq: any, req: any, res: any) {
     }
 }
 
+async function development_route(connectionReq: any, req: any, res: any) {
+    const end_filter = dev_routes.filter(route => route.url.endsWith(connectionReq));
+    const start_filter = dev_routes.filter(route => route.url.startsWith(connectionReq));
+    const urls: dev_route[] = findOverlap(end_filter, start_filter);
+    switch (urls.length) {
+        case 0:
+            res.sendStatus(404);
+            console.warn(chalk.yellow(`No route setup for: ${connectionReq}.`));
+            break;
+        case 1:
+            const url = urls[0];
+            console.log(`Got Dev Request from: ${url.url}.`)
+            const scripts_path = join(__dirname, "development");
+            const files = readdirSync(scripts_path).filter(file => file === `${url.context}.ts`);
+            if (files.length < 1) {
+                console.warn(chalk.red(`No such file as: "${scripts_path} + ${url.context}" for url: "${connectionReq}" matching "${url.url}"`));
+                break;
+            }
+            files.forEach(file => {
+                console.log(`Running "${file}"...`)
+                try {
+                    require(`${scripts_path}\\${file}`).main(req, res);
+                    console.log(chalk.green(`"${file}" Ran and Returned Successfully.`));
+                } catch (e) {
+                    console.error(chalk.red(e))
+                }
+            });
+
+            break;
+        default:
+            res.sendStatus(500);
+            console.warn(chalk.red(`Multiple routes for: ${connectionReq}.\nAll Routes:\n${urls}`));
+            break;
+    }
+}
+
+function isDevelopment(connectionReq: any): boolean {
+    if (dev_routes.filter(route => route.url.startsWith(connectionReq)).length > 0) return true
+    else return false;
+}
+
 app.use((req, res, next) => {
 	const connectionReq = req.headers.host;
+    if (isDevelopment(connectionReq)) return development_route(connectionReq, req, res);
 	if (connectionReq == undefined) return res.sendStatus(400)
 	console.log(`Request from: ${req.headers.host}.`);
     main(connectionReq, req, res);
-})
+});
 
 app.listen(80, () => {
-	console.log("App listening on port 80");
+    console.clear()
+    console.log(chalk.cyan("Web Proxies:"))
+    routes.forEach((route, i) => {
+        console.log(`${i}. From: ${route.url}, to ${route.route}.`)
+    });
+    console.log(chalk.cyan("\nDevelopment Proxies:"))
+    dev_routes.forEach((route, i) => {
+        console.log(`${i}. From: ${route.url}, to ${route.context}.`);
+    });
+	console.log(chalk.bgCyan("\nListening on port 80.\n"));
+    console.log("Logs")
+    const line = '-'.repeat(process.stdout.columns)
+    console.log(line)
 })
