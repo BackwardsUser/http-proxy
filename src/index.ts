@@ -50,14 +50,14 @@ async function main(connectionReq: any, req: any, res: any) {
             break;
         case 1:
             if (await getServerRes(httpify(urls[0].route)) === false) {
-                res.sendStatus(503)
+                res.sendStatus(503);
                 console.warn(chalk.red(`Cannot reach route: ${urls[0].route}.`));
                 break;
             }
             proxy.web(req, res, { target: httpify(urls[0].route) });
             break;
         default:
-            res.sendStatus(500)
+            res.sendStatus(500);
             console.warn(chalk.red(`Multiple routes for: ${connectionReq}.\nAll Routes:\n${urls}`));
             break;
     }
