@@ -131,4 +131,5 @@ dist
 
 # project related
 **/routes.json
+**/dev-routes.json
 /src/development
