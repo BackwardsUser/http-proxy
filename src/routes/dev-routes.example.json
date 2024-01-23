@@ -1,4 +1,6 @@
-{
-    "url": "exampleapi.hostname.com",
-    "context": "server.example.ts"
-}
+[
+    {
+        "url": "exampleapi.hostname.com",
+        "context": "server.example.ts"
+    }
+]

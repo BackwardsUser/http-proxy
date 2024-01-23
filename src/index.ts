@@ -46,10 +46,14 @@ function verifyRouteFiles() {
  * A function used to generate the Example WebServer Routes file.
  */
 function generateExampleRoutes() {
-    const exampleRoutes = {
+    const exampleRoutes = [{
         "url": "example.hostname.com",
         "route": "localhost:3000"
-    } // Initiate Example Data
+    },
+    {
+        "url": "testing.hostname.com",
+        "route": "localhost:3001"
+    }] // Initiate Example Data
 
     writeFileSync(
         join(__dirname, "routes", "routes.example.json"),
@@ -61,10 +65,10 @@ function generateExampleRoutes() {
  * A function used to generate the Example Development Routes file.
  */
 function generateExampleDevelopmentRoutes() {
-    const exampleRoutes = {
+    const exampleRoutes = [{
         "url": "exampleapi.hostname.com",
         "context": "server.example.ts"
-    } // Initiate Example Data
+    }] // Initiate Example Data
 
     writeFileSync(
         join(__dirname, "routes", "dev-routes.example.json"),

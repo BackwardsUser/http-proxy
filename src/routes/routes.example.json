@@ -1,4 +1,10 @@
-{
-    "url": "example.hostname.com",
-    "route": "localhost:3000"
-}
+[
+    {
+        "url": "example.hostname.com",
+        "route": "localhost:3000"
+    },
+    {
+        "url": "testing.hostname.com",
+        "route": "localhost:3001"
+    }
+]
