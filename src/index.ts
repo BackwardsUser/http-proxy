@@ -1,19 +1,76 @@
 // Import Node Packages
-import http from "node:http";
-import express from "express";
-import {route, dev_route} from "./types";
-import {join} from "node:path";
+import { readFileSync, readdirSync, writeFileSync, renameSync } from "node:fs";
+import { route, dev_route } from "./types";
 import httpProxy from "http-proxy";
-import {readFileSync, readdirSync} from "node:fs";
+import { join } from "node:path";
+import express from "express";
+import http from "node:http";
 import chalk from "chalk";
 
 // Initiate Packages
 const app = express(); // Create Express Application
 const proxy = httpProxy.createProxyServer(); // Create Proxy Server
 
+verifyRouteFiles() // Ensure the route files exist.
+
 // Constants
 const routes: route[] = JSON.parse(readFileSync(join(__dirname, "routes", "routes.json")).toString()); // Path to Routes file
 const dev_routes: dev_route[] = JSON.parse(readFileSync(join(__dirname, "routes", "dev-routes.json")).toString()) // Path to Development Routes file
+
+
+// Functions
+
+/**
+ * A function used to verify the existence of both route files.
+ */
+function verifyRouteFiles() {
+    const files = readdirSync(join(__dirname, "routes")); // Get all files in routes directory
+    const filter_routes = files.filter(file => file === "routes.json"); // Filter the routes for "routes.json"
+    if (filter_routes.length < 1) {
+        // if there is no "routes.json" file
+        const filter_example_routes = files.filter(file => file === "routes.example.json"); // Filter for the example file
+        if (filter_example_routes.length < 1) generateExampleRoutes() // if no example file, generate one
+        renameSync(join(__dirname, "routes", "routes.example.json"), join(__dirname, "routes", "routes.json")) // Rename example file to route file.
+    }
+    
+    const filter_dev_routes = files.filter(file => file === "dev-routes.json"); // Filter Development Routes
+    if (filter_dev_routes.length < 1) {
+        // If there is no development routes file
+        const filter_example_routes = files.filter(file => file === "dev-routes.example.json"); // Filter for the example file.
+        if (filter_example_routes.length < 1) generateExampleDevelopmentRoutes() // If there is no example file, generate one.
+        renameSync(join(__dirname, "routes", "dev-routes.example.json"), join(__dirname, "routes", "dev-routes.json")) // rename the example file development file.
+    }
+}
+
+/**
+ * A function used to generate the Example WebServer Routes file.
+ */
+function generateExampleRoutes() {
+    const exampleRoutes = {
+        "url": "example.hostname.com",
+        "route": "localhost:3000"
+    } // Initiate Example Data
+
+    writeFileSync(
+        join(__dirname, "routes", "routes.example.json"),
+        JSON.stringify(exampleRoutes, null, 4)
+    ) // Write it to file.
+}
+
+/**
+ * A function used to generate the Example Development Routes file.
+ */
+function generateExampleDevelopmentRoutes() {
+    const exampleRoutes = {
+        "url": "exampleapi.hostname.com",
+        "context": "server.example.ts"
+    } // Initiate Example Data
+
+    writeFileSync(
+        join(__dirname, "routes", "dev-routes.example.json"),
+        JSON.stringify(exampleRoutes, null, 4)
+    ) // Write it to file.
+}
 
 /**
  * Checks a given IP is active by probing it with a get request,
@@ -22,15 +79,15 @@ const dev_routes: dev_route[] = JSON.parse(readFileSync(join(__dirname, "routes"
  * @returns Boolean, whether the ip returns 200
  */
 function getServerRes(ip: string) {
-	return new Promise((res) => { // Create new Promise
-		http.get(ip, (response) => { // Send the HTTP request to the given IP
-			const {statusCode} = response; // pull the Status Code from the response
-			if (statusCode == 200) return res(true) // if the Status Code is 200, return true
-			else return res(false); // else return false.
-		}).on("error", (err) => { // If the HTTP request fails,
-			return res(false); // default return false
-		});
-	});
+    return new Promise((res) => { // Create new Promise
+        http.get(ip, (response) => { // Send the HTTP request to the given IP
+            const { statusCode } = response; // pull the Status Code from the response
+            if (statusCode == 200) return res(true) // if the Status Code is 200, return true
+            else return res(false); // else return false.
+        }).on("error", (err) => { // If the HTTP request fails,
+            return res(false); // default return false
+        });
+    });
 }
 
 /**
@@ -71,7 +128,7 @@ async function main(connectionReq: any, req: any, res: any) {
     const end_filter = routes.filter(route => route.url.endsWith(connectionReq)); // Filter Routes by comparing the Hostname to the end of the route
     const start_filter = routes.filter(route => route.url.startsWith(connectionReq)); // Filter Routes by comparing the Hostname to the beginning of the route
     const urls = findOverlap(end_filter, start_filter); // Find the Overlaps between the start and end filter
-    
+
     // Switch Statement checking the number of overlapping items.
     switch (urls.length) {
         case 0:
@@ -154,10 +211,10 @@ function isDevelopment(connectionReq: any): boolean {
 }
 
 app.use((req, res, next) => {
-	const connectionReq = req.headers.host; // Get Hostname from request
-	if (connectionReq == undefined) return res.sendStatus(400) // if there is no connection Request, Send Status 400
+    const connectionReq = req.headers.host; // Get Hostname from request
+    if (connectionReq == undefined) return res.sendStatus(400) // if there is no connection Request, Send Status 400
     if (isDevelopment(connectionReq)) return development_route(connectionReq, req, res); // Check if its a Development Route.
-	console.log(`Request from: ${req.headers.host}.`); // Log the request attempt
+    console.log(`Request from: ${req.headers.host}.`); // Log the request attempt
     main(connectionReq, req, res); // Call main function.
 });
 
@@ -172,7 +229,7 @@ app.listen(80, () => {
     dev_routes.forEach((route, i) => {
         console.log(`${i}. From: ${route.url}, to ${route.context}.`); // Log each route and its information
     });
-	console.log(chalk.bgCyan("\nListening on port 80.\n")); // Log the port the app is listening on.
+    console.log(chalk.bgCyan("\nListening on port 80.\n")); // Log the port the app is listening on.
     console.log("Logs") // App Log Header
     const line = '-'.repeat(process.stdout.columns) // Create Separator line.
     console.log(line); // Log Separator Line
