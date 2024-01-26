@@ -12,13 +12,13 @@ This proxy requires any attached web server to reply with Status Code 200, meani
 
 ### Packages
 
-- express `v4.18.2`
-- http-proxy `v1.18.1`
-- chalk `v4.1.2`
-- nodemon `v3.0.1`
-- typescript `v5.3.3`
-- ts-node `v10.9.1`
-- eslint `v8.56.0`
+- [express](https://expressjs.com/) `v4.18.2`
+- [http-proxy](https://www.npmjs.com/package/http-proxy) `v1.18.1`
+- [chalk](https://www.npmjs.com/package/chalk) `v4.1.2`
+- [nodemon](https://nodemon.io/) `v3.0.1`
+- [typescript](https://typescriptlang.org/) `v5.3.3`
+- [ts-node](https://typestrong.org/ts-node) `v10.9.1`
+- [eslint](https://eslint.org/) `v8.56.0`
 
 ## Installation/Usage
 
