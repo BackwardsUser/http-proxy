@@ -12,7 +12,13 @@ This proxy requires any attached web server to reply with Status Code 200, meani
 
 ### Packages
 
-- 
+- express `v4.18.2`
+- http-proxy `v1.18.1`
+- chalk `v4.1.2`
+- nodemon `v3.0.1`
+- typescript `v5.3.3`
+- ts-node `v10.9.1`
+- eslint `v8.56.0`
 
 ## Installation/Usage
 
@@ -24,6 +30,9 @@ This proxy requires any attached web server to reply with Status Code 200, meani
 6. Create any necessary files in the `development` directory
 7. Start the proxy with: `npm start`
 8. Make your connection
+
+### ESLint
+If you want to use ESLint in your development scripts, remove the .eslintignore file.
 
 ## Usage
 
