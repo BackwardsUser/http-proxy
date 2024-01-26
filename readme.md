@@ -20,7 +20,7 @@ This proxy requires any attached web server to reply with Status Code 200, meani
 - [ts-node](https://typestrong.org/ts-node) `v10.9.1`
 - [eslint](https://eslint.org/) `v8.56.0`
 
-## Installation/Usage
+## Installation
 
 1. Clone this repository
 2. Open the repository in a terminal
@@ -31,10 +31,14 @@ This proxy requires any attached web server to reply with Status Code 200, meani
 7. Start the proxy with: `npm start`
 8. Make your connection
 
+
+## Usage
+
 ### ESLint
 If you want to use ESLint in your development scripts, remove the .eslintignore file.
 
-## Usage
+
+### Adding and Removing Routes and Development Routes
 
 Read Step 4 for basics,  
 A web route is written as following:
