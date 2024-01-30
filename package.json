@@ -1,6 +1,6 @@
 {
   "name": "http-router",
-  "version": "1.4.4",
+  "version": "2.4.4",
   "description": "",
   "main": "./src/index.ts",
   "scripts": {
