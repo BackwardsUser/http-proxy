@@ -1,9 +1,13 @@
+## This application is currently being rewritten.
+I'm currently rewritting this application. I'll be reworking the routes, they'll be instead written to a database instead of being stored in file.  
+Also a UI will be added to modify the routes.
+
 # http proxy
 
 A simple reverse proxy for routing hypertext files from different ports to http
 
-## Warning
-This proxy requires any attached web server to reply with Status Code 200, meaning some tools may not function perfectly, i.e. React apps are required to be built before hosting.
+### Note
+This proxy requires any attached web server to reply with Status Code 200.
 
 ## Versions
 
