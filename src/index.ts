@@ -119,6 +119,7 @@ function httpify(url: string): string {
 }
 
 /**
+ * Necessary?
  * Takes two arrays and compares them for any overlapping/similar items.
  * Will then return a list of all the similar items.
  * @param a First Array
@@ -142,6 +143,8 @@ function findOverlap(a: any[], b: any[]): any[] {
  * @param res Express Response
  */
 async function main(connectionReq: string, req: Request, res: Response) {
+	// Do we need to filter like this?
+	// Would this not just be routes.includes(hostname)?
 	const endFilter: Route[] = routes.filter(route => route.url.endsWith(connectionReq)); // Filter Routes by comparing the Hostname to the end of the route
 	const startFilter: Route[] = routes.filter(route => route.url.startsWith(connectionReq)); // Filter Routes by comparing the Hostname to the beginning of the route
 	const urls: Route[] = findOverlap(endFilter, startFilter) as Route[]; // Find the Overlaps between the start and end filter
