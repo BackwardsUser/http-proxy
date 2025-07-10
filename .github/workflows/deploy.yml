@@ -1,0 +1,39 @@
+name: Deploy to Portainer
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Typescript
+        run: npm run build
+
+      - name: Prepare deploy branch
+        run: |
+          mkdir deploy
+          cp -r build deploy/
+          cp -r routes deploy/
+          cp package.json Dockerfile docker-compose.yml deploy/
+
+      - name: Push to deploy branch
+        run: |
+          cd deploy
+          git init
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          git checkout -b deploy
+          git add .
+          git commit -m "Deploy from CI"
+          git push -f origin deploy

@@ -1,3 +1,8 @@
 node_modules
-.git
-*.log
+src
+build
+*.ts
+!.dockerignore
+!.dockerfile
+!package*.json
+!.env
