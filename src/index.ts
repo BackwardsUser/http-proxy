@@ -10,12 +10,13 @@ import chalk from 'chalk';
 // Initiate Packages
 const app = express(); // Create Express Application
 const proxy = httpProxy.createProxyServer(); // Create Proxy Server
+const routesDir = join(__dirname, "..", "routes"); // Routes Directory Location
 
 verifyRouteFiles(); // Ensure the route files exist.
 
 // Constants
-const routes: Route[] = JSON.parse(readFileSync(join(__dirname, 'routes', 'routes.json')).toString()) as Route[]; // Path to Routes file
-const devRoutes: DevRoute[] = JSON.parse(readFileSync(join(__dirname, 'routes', 'dev-routes.json')).toString()) as DevRoute[]; // Path to Development Routes file
+const routes: Route[] = JSON.parse(readFileSync(join(routesDir, 'routes.json')).toString()) as Route[]; // Path to Routes file
+const devRoutes: DevRoute[] = JSON.parse(readFileSync(join(routesDir, 'dev-routes.json')).toString()) as DevRoute[]; // Path to Development Routes file
 
 // Functions
 
@@ -23,7 +24,7 @@ const devRoutes: DevRoute[] = JSON.parse(readFileSync(join(__dirname, 'routes', 
  * A function used to verify the existence of both route files.
  */
 function verifyRouteFiles() {
-	const files = readdirSync(join(__dirname, 'routes')); // Get all files in routes directory
+	const files = readdirSync(routesDir); // Get all files in routes directory
 	const filterRoutes = files.filter(file => file === 'routes.json'); // Filter the routes for "routes.json"
 	if (filterRoutes.length < 1) {
 		// If there is no "routes.json" file
@@ -32,7 +33,7 @@ function verifyRouteFiles() {
 			generateExampleRoutes();
 		} // If no example file, generate one
 
-		renameSync(join(__dirname, 'routes', 'routes.example.json'), join(__dirname, 'routes', 'routes.json')); // Rename example file to route file.
+		renameSync(join(routesDir, 'routes.example.json'), join(routesDir, 'routes.json')); // Rename example file to route file.
 	}
 
 	const filterDevRoutes = files.filter(file => file === 'dev-routes.json'); // Filter Development Routes
@@ -43,7 +44,7 @@ function verifyRouteFiles() {
 			generateExampleDevelopmentRoutes();
 		} // If there is no example file, generate one.
 
-		renameSync(join(__dirname, 'routes', 'dev-routes.example.json'), join(__dirname, 'routes', 'dev-routes.json')); // Rename the example file development file.
+		renameSync(join(routesDir, 'dev-routes.example.json'), join(routesDir, 'dev-routes.json')); // Rename the example file development file.
 	}
 }
 
@@ -61,7 +62,7 @@ function generateExampleRoutes() {
 	}]; // Initiate Example Data
 
 	writeFileSync(
-		join(__dirname, 'routes', 'routes.example.json'),
+		join(routesDir, 'routes.example.json'),
 		JSON.stringify(exampleRoutes, null, 4),
 	); // Write it to file.
 }
@@ -76,7 +77,7 @@ function generateExampleDevelopmentRoutes() {
 	}]; // Initiate Example Data
 
 	writeFileSync(
-		join(__dirname, 'routes', 'dev-routes.example.json'),
+		join(routesDir, 'dev-routes.example.json'),
 		JSON.stringify(exampleRoutes, null, 4),
 	); // Write it to file.
 }

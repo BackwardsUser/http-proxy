@@ -1,4 +1,4 @@
-import {type Request, type Response} from 'express';
+import {type Request, type Response} from "express";
 
 // Route Object Layout
 export type Route = {
