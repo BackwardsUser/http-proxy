@@ -200,7 +200,7 @@ async function builtInRoute(connectionReq: string, req: Request, res: Response) 
 			// Get files within the built-in folder.
 			// Than Filter the files with route context.
 			// eslint-disable-next-line no-case-declarations
-			const files = readdirSync(scriptsPath).filter(file => file === `${url.context}.ts`);
+			const files = readdirSync(scriptsPath).filter(file => file === `${url.context}.ts` || file === `${url.context}.js`);
 
 			if (files.length < 1) {
 				// Log Error if no such file exists.
