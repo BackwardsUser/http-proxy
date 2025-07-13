@@ -1,6 +1,6 @@
 // Import Node Packages
 import {readFileSync, readdirSync, writeFileSync, renameSync} from "node:fs";
-import {type Route, type DevRoute, type DevScript} from "./types";
+import {type Route, type BuiltInRoute, type BuiltInScript} from "./types";
 import httpProxy from "http-proxy";
 import {join} from "node:path";
 import express, {type Request, type Response} from "express";
@@ -16,7 +16,7 @@ verifyRouteFiles(); // Ensure the route files exist.
 
 // Constants
 const routes: Route[] = JSON.parse(readFileSync(join(routesDir, "routes.json")).toString()) as Route[]; // Path to Routes file
-const devRoutes: DevRoute[] = JSON.parse(readFileSync(join(routesDir, "dev-routes.json")).toString()) as DevRoute[]; // Path to Development Routes file
+const builtInRoutes: BuiltInRoute[] = JSON.parse(readFileSync(join(routesDir, "builtin-routes.json")).toString()) as BuiltInRoute[]; // Path to "Built-Ins" Routes file
 
 // Functions
 
@@ -36,15 +36,15 @@ function verifyRouteFiles() {
 		renameSync(join(routesDir, "routes.example.json"), join(routesDir, "routes.json")); // Rename example file to route file.
 	}
 
-	const filterDevRoutes = files.filter(file => file === "dev-routes.json"); // Filter Development Routes
+	const filterDevRoutes = files.filter(file => file === "builtin-routes.json"); // Filter Built-In Routes
 	if (filterDevRoutes.length < 1) {
 		// If there is no development routes file
-		const filterExampleRoutes = files.filter(file => file === "dev-routes.example.json"); // Filter for the example file.
+		const filterExampleRoutes = files.filter(file => file === "builtin-routes.example.json"); // Filter for the example file.
 		if (filterExampleRoutes.length < 1) {
-			generateExampleDevelopmentRoutes();
+			generateExampleBuiltInRoutes();
 		} // If there is no example file, generate one.
 
-		renameSync(join(routesDir, "dev-routes.example.json"), join(routesDir, "dev-routes.json")); // Rename the example file development file.
+		renameSync(join(routesDir, "builtin-routes.example.json"), join(routesDir, "builtin-routes.json")); // Rename the example builtin file.
 	}
 }
 
@@ -68,16 +68,16 @@ function generateExampleRoutes() {
 }
 
 /**
- * A function used to generate the Example Development Routes file.
+ * A function used to generate the Example Built-In Routes file.
  */
-function generateExampleDevelopmentRoutes() {
+function generateExampleBuiltInRoutes() {
 	const exampleRoutes = [{
 		url: "exampleapi.hostname.com",
 		context: "server.example.ts",
 	}]; // Initiate Example Data
 
 	writeFileSync(
-		join(routesDir, "dev-routes.example.json"),
+		join(routesDir, "builtin-routes.example.json"),
 		JSON.stringify(exampleRoutes, null, 4),
 	); // Write it to file.
 }
@@ -174,15 +174,15 @@ async function main(connectionReq: string, req: Request, res: Response) {
 }
 
 /**
- * Like the Main function, finds if hostname is in routes file, will run the development file if it exists.
+ * Like the Main function, finds if hostname is in routes file, will run the builtin file if it exists.
  * @param connectionReq Hostname
  * @param req Express Request
  * @param res Express Response
  */
-async function developmentRoute(connectionReq: string, req: Request, res: Response) {
-	const endFilter: DevRoute[] = devRoutes.filter(route => route.url.endsWith(connectionReq)); // Filter Routes by comparing the Hostname to the end of the route
-	const startFilter: DevRoute[] = devRoutes.filter(route => route.url.startsWith(connectionReq)); // Filter Routes by comparing the Hostname to the beginning of the route
-	const urls: DevRoute[] = findOverlap(endFilter, startFilter) as DevRoute[]; // Find the Overlaps between the start and end filter
+async function builtInRoute(connectionReq: string, req: Request, res: Response) {
+	const endFilter: BuiltInRoute[] = builtInRoutes.filter(route => route.url.endsWith(connectionReq)); // Filter Routes by comparing the Hostname to the end of the route
+	const startFilter: BuiltInRoute[] = builtInRoutes.filter(route => route.url.startsWith(connectionReq)); // Filter Routes by comparing the Hostname to the beginning of the route
+	const urls: BuiltInRoute[] = findOverlap(endFilter, startFilter) as BuiltInRoute[]; // Find the Overlaps between the start and end filter
 
 	// Switch Statement checking the number of overlapping items.
 	switch (urls.length) {
@@ -192,12 +192,12 @@ async function developmentRoute(connectionReq: string, req: Request, res: Respon
 			break; // End Request.
 		case 1:
 			// eslint-disable-next-line no-case-declarations
-			const url: DevRoute = urls[0]; // Get the first URL if there is one overlap.
-			console.log(`Got Dev Request from: ${url.url}.`); // Log Successful request
+			const url: BuiltInRoute = urls[0]; // Get the first URL if there is one overlap.
+			console.log(`Got Built-In Request from: ${url.url}.`); // Log Successful request
 			// eslint-disable-next-line no-case-declarations
-			const scriptsPath: string = join(__dirname, "..", "development"); // Get the path to development files
+			const scriptsPath: string = join(__dirname, "..", "built-ins"); // Get the path to built-in files
 
-			// Get files within the development folder.
+			// Get files within the built-in folder.
 			// Than Filter the files with route context.
 			// eslint-disable-next-line no-case-declarations
 			const files = readdirSync(scriptsPath).filter(file => file === `${url.context}.ts`);
@@ -211,7 +211,7 @@ async function developmentRoute(connectionReq: string, req: Request, res: Respon
 			files.forEach(async (file: string) => {
 				console.log(`Running "${file}"...`); // Log run attempt.
 				try {
-					const script: DevScript = await import(`${scriptsPath}\\${file}`) as DevScript; // Get User Development file.
+					const script: BuiltInScript = await import(`${scriptsPath}\\${file}`) as BuiltInScript; // Get User Built-in file.
 					script.main(req, res);
 					console.log(chalk.green(`"${file}" Ran and Returned Successfully.`)); // Log Success.
 				} catch (e) {
@@ -228,12 +228,12 @@ async function developmentRoute(connectionReq: string, req: Request, res: Respon
 }
 
 /**
- * Checks if the request is a development request (API).
+ * Checks if the request is a built-in request (API).
  * @param connectionReq Hostname
- * @returns boolean based on whether the hostname is a development request
+ * @returns boolean based on whether the hostname is a built-in request
  */
-function isDevelopment(connectionReq: string): boolean {
-	if (devRoutes.filter(route => route.url.startsWith(connectionReq)).length > 0) {
+function isBuiltIn(connectionReq: string): boolean {
+	if (builtInRoutes.filter(route => route.url.startsWith(connectionReq)).length > 0) {
 		return true;
 	}
 
@@ -246,9 +246,9 @@ app.use(async (req: Request, res: Response) => {
 		return res.sendStatus(400);
 	} // If there is no connection Request, Send Status 400
 
-	if (isDevelopment(connectionReq)) {
-		return developmentRoute(connectionReq, req, res);
-	} // Check if its a Development Route.
+	if (isBuiltIn(connectionReq)) {
+		return builtInRoute(connectionReq, req, res);
+	} // Check if its a Built-in Route.
 
 	console.log(`Request from: ${req.headers.host}.`); // Log the request attempt
 	await main(connectionReq, req, res); // Call main function.
@@ -261,8 +261,8 @@ app.listen(80, () => {
 	routes.forEach((route, i) => {
 		console.log(`${i}. From: ${route.url}, to ${route.route}.`); // Log each route and its information
 	});
-	console.log(chalk.cyan("\nDevelopment Proxies:")); // Log Header for Development Files
-	devRoutes.forEach((route, i) => {
+	console.log(chalk.cyan("\nDevelopment Proxies:")); // Log Header for Built-in Files
+	builtInRoutes.forEach((route, i) => {
 		console.log(`${i}. From: ${route.url}, to ${route.context}.`); // Log each route and its information
 	});
 	console.log(chalk.bgCyan("\nListening on port 80.\n")); // Log the port the app is listening on.
