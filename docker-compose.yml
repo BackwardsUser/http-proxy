@@ -6,4 +6,7 @@ services:
       context: .
     ports:
       - "80:80"
+    volumes:
+      - ./development:/app/development
+      - ./routes:/app/routes
     restart: unless-stopped

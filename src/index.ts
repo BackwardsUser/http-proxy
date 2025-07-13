@@ -195,7 +195,7 @@ async function developmentRoute(connectionReq: string, req: Request, res: Respon
 			const url: DevRoute = urls[0]; // Get the first URL if there is one overlap.
 			console.log(`Got Dev Request from: ${url.url}.`); // Log Successful request
 			// eslint-disable-next-line no-case-declarations
-			const scriptsPath: string = join(__dirname, "development"); // Get the path to development files
+			const scriptsPath: string = join(__dirname, "..", "development"); // Get the path to development files
 
 			// Get files within the development folder.
 			// Than Filter the files with route context.
