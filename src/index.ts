@@ -211,7 +211,7 @@ async function builtInRoute(connectionReq: string, req: Request, res: Response) 
 			files.forEach(async (file: string) => {
 				console.log(`Running "${file}"...`); // Log run attempt.
 				try {
-					const script: BuiltInScript = await import(`${scriptsPath}\\${file}`) as BuiltInScript; // Get User Built-in file.
+					const script: BuiltInScript = await import(join(scriptsPath, file)) as BuiltInScript; // Get User Built-in file.
 					script.main(req, res);
 					console.log(chalk.green(`"${file}" Ran and Returned Successfully.`)); // Log Success.
 				} catch (e) {
