@@ -24,11 +24,9 @@ jobs:
 
       - name: Prepare deploy branch
         run: |
-          rm -rf deploy
           mkdir deploy
           cp -r build deploy/
           cp -r routes deploy/
-          cp -r development deploy/
           cp package*.json Dockerfile docker-compose.yml deploy/
 
       - name: Push to deploy branch
