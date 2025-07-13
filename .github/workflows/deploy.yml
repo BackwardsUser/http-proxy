@@ -24,6 +24,7 @@ jobs:
 
       - name: Prepare deploy branch
         run: |
+          rm -rf deploy
           mkdir deploy
           cp -r build deploy/
           cp -r routes deploy/
