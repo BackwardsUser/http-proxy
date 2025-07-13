@@ -6,6 +6,6 @@ RUN npm ci --only=production
 
 COPY build ./build
 COPY routes ./routes
-COPY development ./development
+COPY built-ins ./built-ins
 
 CMD ["node", "build/index.js"]

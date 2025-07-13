@@ -7,6 +7,6 @@ services:
     ports:
       - "80:80"
     volumes:
-      - /srv/http-proxy/development:/app/development
+      - /srv/http-proxy/built-ins:/app/built-ins
       - /srv/http-proxy/routes:/app/routes
     restart: unless-stopped
