@@ -10,11 +10,12 @@ import chalk from "chalk";
 // Initiate Packages
 const app = express();
 const proxy = httpProxy.createProxyServer();
+const routesDir = join(__dirname, "..", "routes"); // While this is a constant, it needs to exist before "verifyRouteFiles" which needs to exist before defining constants...
 
 verifyRouteFiles();
 
 // Constants
-const routesDir = join(__dirname, "..", "routes");
+const port = process.env.PORT ?? 80;
 const routes: Route[] = JSON.parse(readFileSync(join(routesDir, "routes.json")).toString()) as Route[];
 const builtInRoutes: BuiltInRoute[] = JSON.parse(readFileSync(join(routesDir, "builtin-routes.json")).toString()) as BuiltInRoute[];
 
@@ -72,8 +73,7 @@ function generateExampleBuiltInRoutes() {
 
 async function getServerRes(ip: string) {
 	return new Promise(res => {
-		// Use /health instead of just "/"
-        http.get(ip, response => {
+        http.get(`${ip}/health`, response => {
 			const {statusCode} = response;
 			if (statusCode === 200) {
 				res(true);
@@ -195,7 +195,7 @@ app.use(async (req: Request, res: Response) => {
 	await main(connectionReq, req, res);
 });
 
-app.listen(80, () => {
+app.listen(port, () => {
 	console.clear();
 	console.log(chalk.cyan("Web Proxies:"));
 	routes.forEach((route, i) => {
@@ -205,7 +205,7 @@ app.listen(80, () => {
 	builtInRoutes.forEach((route, i) => {
 		console.log(`${i}. From: ${route.url}, to ${route.context}.`);
 	});
-	console.log(chalk.bgCyan("\nListening on port 80.\n"));
+	console.log(chalk.bgCyan(`\nListening on port ${port}.\n`));
 	console.log("Logs");
 	const line = "-".repeat(process.stdout.columns);
 	console.log(line);
