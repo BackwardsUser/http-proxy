@@ -84,7 +84,7 @@ Adding multiple can be done the same for either routes file, follow the routes e
 I've tried to leave as much free liberty in creating your own Built-ins, but there were some restrictions.
 An index built-in file (whatever file is listed in your builtin-routes file) must contain a exported "main" function
 ```js
-modules.export = function main() {}
+module.exports = function main() {}
 ```
 The main function is passed the [Request](https://expressjs.com/en/5x/api.html#req) and [Response](https://expressjs.com/en/5x/api.html#res) variables from [express](https://expressjs.com/)  
 As with any express app, any main function you may create should *always* send a response to the user in some form.  
