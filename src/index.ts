@@ -8,49 +8,40 @@ import http from "node:http";
 import chalk from "chalk";
 
 // Initiate Packages
-const app = express(); // Create Express Application
-const proxy = httpProxy.createProxyServer(); // Create Proxy Server
-const routesDir = join(__dirname, "..", "routes"); // Routes Directory Location
+const app = express();
+const proxy = httpProxy.createProxyServer();
 
-verifyRouteFiles(); // Ensure the route files exist.
+verifyRouteFiles();
 
 // Constants
-const routes: Route[] = JSON.parse(readFileSync(join(routesDir, "routes.json")).toString()) as Route[]; // Path to Routes file
-const builtInRoutes: BuiltInRoute[] = JSON.parse(readFileSync(join(routesDir, "builtin-routes.json")).toString()) as BuiltInRoute[]; // Path to "Built-Ins" Routes file
+const routesDir = join(__dirname, "..", "routes");
+const routes: Route[] = JSON.parse(readFileSync(join(routesDir, "routes.json")).toString()) as Route[];
+const builtInRoutes: BuiltInRoute[] = JSON.parse(readFileSync(join(routesDir, "builtin-routes.json")).toString()) as BuiltInRoute[];
 
 // Functions
-
-/**
- * A function used to verify the existence of both route files.
- */
 function verifyRouteFiles() {
-	const files = readdirSync(routesDir); // Get all files in routes directory
-	const filterRoutes = files.filter(file => file === "routes.json"); // Filter the routes for "routes.json"
+	const files = readdirSync(routesDir);
+	const filterRoutes = files.filter(file => file === "routes.json");
 	if (filterRoutes.length < 1) {
-		// If there is no "routes.json" file
-		const filterExampleRoutes = files.filter(file => file === "routes.example.json"); // Filter for the example file
+		const filterExampleRoutes = files.filter(file => file === "routes.example.json");
 		if (filterExampleRoutes.length < 1) {
 			generateExampleRoutes();
-		} // If no example file, generate one
+		}
 
-		renameSync(join(routesDir, "routes.example.json"), join(routesDir, "routes.json")); // Rename example file to route file.
+		renameSync(join(routesDir, "routes.example.json"), join(routesDir, "routes.json"));
 	}
 
-	const filterDevRoutes = files.filter(file => file === "builtin-routes.json"); // Filter Built-In Routes
+	const filterDevRoutes = files.filter(file => file === "builtin-routes.json");
 	if (filterDevRoutes.length < 1) {
-		// If there is no development routes file
-		const filterExampleRoutes = files.filter(file => file === "builtin-routes.example.json"); // Filter for the example file.
+		const filterExampleRoutes = files.filter(file => file === "builtin-routes.example.json");
 		if (filterExampleRoutes.length < 1) {
 			generateExampleBuiltInRoutes();
-		} // If there is no example file, generate one.
+		}
 
-		renameSync(join(routesDir, "builtin-routes.example.json"), join(routesDir, "builtin-routes.json")); // Rename the example builtin file.
+		renameSync(join(routesDir, "builtin-routes.example.json"), join(routesDir, "builtin-routes.json"));
 	}
 }
 
-/**
- * A function used to generate the Example WebServer Routes file.
- */
 function generateExampleRoutes() {
 	const exampleRoutes = [{
 		url: "example.hostname.com",
@@ -59,179 +50,129 @@ function generateExampleRoutes() {
 	{
 		url: "testing.hostname.com",
 		route: "localhost:3001",
-	}]; // Initiate Example Data
+	}];
 
 	writeFileSync(
 		join(routesDir, "routes.example.json"),
 		JSON.stringify(exampleRoutes, null, 4),
-	); // Write it to file.
+	);
 }
 
-/**
- * A function used to generate the Example Built-In Routes file.
- */
 function generateExampleBuiltInRoutes() {
 	const exampleRoutes = [{
 		url: "exampleapi.hostname.com",
 		context: "server.example.ts",
-	}]; // Initiate Example Data
+	}];
 
 	writeFileSync(
 		join(routesDir, "builtin-routes.example.json"),
 		JSON.stringify(exampleRoutes, null, 4),
-	); // Write it to file.
+	);
 }
 
-/**
- * Checks a given IP is active by probing it with a get request,
- * looking for the status code 200.
- * @param ip The IP to check.
- * @returns Boolean, whether the ip returns 200
- */
 async function getServerRes(ip: string) {
-	return new Promise(res => { // Create new Promise
-		http.get(ip, response => { // Send the HTTP request to the given IP
-			const {statusCode} = response; // Pull the Status Code from the response
+	return new Promise(res => {
+		// Use /health instead of just "/"
+        http.get(ip, response => {
+			const {statusCode} = response;
 			if (statusCode === 200) {
 				res(true);
 				return;
-			} // If the Status Code is 200, return true
+			}
 
-			res(false); // Else return false.
+			res(false);
 		}).on("error", err => {
-			res(false); // Default Return False if error.
-		},
-		);
+			res(false);
+		});
 	});
 }
 
-/**
- * Adds "http://" to the beginning of the required string,
- * this turns it into a valid URL as it is required by certain functions.
- * @param url The URL to "httpify"
- * @returns the hostname with http
- */
 function httpify(url: string): string {
 	if (url.startsWith("http")) {
 		return url;
-	} // Return the url as-is if it already has the "http://" prefix
+	}
 
-	return `http://${url}`; // Otherwise add the "http://" prefix and return it.
+	return `http://${url}`;
 }
 
-/**
- * Necessary?
- * Takes two arrays and compares them for any overlapping/similar items.
- * Will then return a list of all the similar items.
- * @param a First Array
- * @param b Second Array
- * @returns Array of Overlaps
- */
 function findOverlap(a: any[], b: any[]): any[] {
-	const out: any[] = []; // Create new "output" array
-	a.forEach(item => { // For every item in the first array,
-		if (b.includes(item)) { // If the item is in the second array,
-			out.push(item); // Add the item to output.
+	const out: any[] = [];
+	a.forEach(item => {
+		if (b.includes(item)) {
+			out.push(item);
 		}
 	});
-	return out; // Return the output.
+	return out;
 }
 
-/**
- * The Main function, finds if hostname is in routes file, will proxy the webserver if it exists and its up.
- * @param connectionReq Hostname
- * @param req Express Request
- * @param res Express Response
- */
 async function main(connectionReq: string, req: Request, res: Response) {
-	// Do we need to filter like this?
-	// Would this not just be routes.includes(hostname)?
-	const endFilter: Route[] = routes.filter(route => route.url.endsWith(connectionReq)); // Filter Routes by comparing the Hostname to the end of the route
-	const startFilter: Route[] = routes.filter(route => route.url.startsWith(connectionReq)); // Filter Routes by comparing the Hostname to the beginning of the route
-	const urls: Route[] = findOverlap(endFilter, startFilter) as Route[]; // Find the Overlaps between the start and end filter
+	const endFilter: Route[] = routes.filter(route => route.url.endsWith(connectionReq));
+	const startFilter: Route[] = routes.filter(route => route.url.startsWith(connectionReq));
+	const urls: Route[] = findOverlap(endFilter, startFilter) as Route[];
 
-	// Switch Statement checking the number of overlapping items.
 	switch (urls.length) {
 		case 0:
-			res.sendStatus(404); // Send Status 404 if there is no overlap
-			console.warn(chalk.yellow(`No route setup for: ${connectionReq}.`)); // Log Warning
-			break; // End Request
+			res.sendStatus(404);
+			console.warn(chalk.yellow(`No route setup for: ${connectionReq}.`));
+			break;
 		case 1:
-			// Check Server Status.
 			if (await getServerRes(httpify(urls[0].route)) === false) {
-				res.sendStatus(503); // Send Status 503 if server is down.
-				console.warn(chalk.red(`Cannot reach route: ${urls[0].route}.`)); // Log Error
-				break; // End Request
+				res.sendStatus(503);
+				console.warn(chalk.red(`Cannot reach route: ${urls[0].route}.`));
+				break;
 			}
 
-			proxy.web(req, res, {target: httpify(urls[0].route)}); // Proxy WebServer
-			break; // End Request
+			proxy.web(req, res, {target: httpify(urls[0].route)});
+			break;
 		default:
-			res.sendStatus(500); // Send Status 500 if there are multiple overlapping routes.
-			console.warn(chalk.red(`Multiple routes for: ${connectionReq}.\nAll Routes:\n${urls.toString()}`)); // Log Warning
-			break; // End Request
+			res.sendStatus(500);
+			console.warn(chalk.red(`Multiple routes for: ${connectionReq}.\nAll Routes:\n${urls.toString()}`));
+			break;
 	}
 }
 
-/**
- * Like the Main function, finds if hostname is in routes file, will run the builtin file if it exists.
- * @param connectionReq Hostname
- * @param req Express Request
- * @param res Express Response
- */
 async function builtInRoute(connectionReq: string, req: Request, res: Response) {
-	const endFilter: BuiltInRoute[] = builtInRoutes.filter(route => route.url.endsWith(connectionReq)); // Filter Routes by comparing the Hostname to the end of the route
-	const startFilter: BuiltInRoute[] = builtInRoutes.filter(route => route.url.startsWith(connectionReq)); // Filter Routes by comparing the Hostname to the beginning of the route
-	const urls: BuiltInRoute[] = findOverlap(endFilter, startFilter) as BuiltInRoute[]; // Find the Overlaps between the start and end filter
+	const endFilter: BuiltInRoute[] = builtInRoutes.filter(route => route.url.endsWith(connectionReq));
+	const startFilter: BuiltInRoute[] = builtInRoutes.filter(route => route.url.startsWith(connectionReq));
+	const urls: BuiltInRoute[] = findOverlap(endFilter, startFilter) as BuiltInRoute[];
 
-	// Switch Statement checking the number of overlapping items.
 	switch (urls.length) {
 		case 0:
-			res.sendStatus(404); // Send Status 404 if there is no overlap
-			console.warn(chalk.yellow(`No route setup for: ${connectionReq}.`)); // Log Warning
-			break; // End Request.
+			res.sendStatus(404);
+			console.warn(chalk.yellow(`No route setup for: ${connectionReq}.`));
+			break;
 		case 1:
 			// eslint-disable-next-line no-case-declarations
-			const url: BuiltInRoute = urls[0]; // Get the first URL if there is one overlap.
-			console.log(`Got Built-In Request from: ${url.url}.`); // Log Successful request
+			const url: BuiltInRoute = urls[0];
+			console.log(`Got Built-In Request from: ${url.url}.`);
 			// eslint-disable-next-line no-case-declarations
-			const scriptsPath: string = join(__dirname, "..", "built-ins"); // Get the path to built-in files
-
-			// Get files within the built-in folder.
-			// Than Filter the files with route context.
-			// eslint-disable-next-line no-case-declarations
+			const scriptsPath: string = join(__dirname, "..", "built-ins");
 			const files = readdirSync(scriptsPath).filter(file => file === `${url.context}.ts` || file === `${url.context}.js`);
 
 			if (files.length < 1) {
-				// Log Error if no such file exists.
 				console.warn(chalk.red(`No such file as: "${scriptsPath} + ${url.context}" for url: "${connectionReq}" matching "${url.url}"`));
-				break; // End Request.
+				break;
 			}
 
 			files.forEach(async (file: string) => {
-				console.log(`Running "${file}"...`); // Log run attempt.
+				console.log(`Running "${file}"...`);
 				try {
-					const script: BuiltInScript = await import(join(scriptsPath, file)) as BuiltInScript; // Get User Built-in file.
+					const script: BuiltInScript = await import(join(scriptsPath, file)) as BuiltInScript;
 					script.main(req, res);
-					console.log(chalk.green(`"${file}" Ran and Returned Successfully.`)); // Log Success.
+					console.log(chalk.green(`"${file}" Ran and Returned Successfully.`));
 				} catch (e) {
-					console.error(chalk.red(e)); // Error if something breaks.
+					console.error(chalk.red(e));
 				}
 			});
 
-			break; // End Request
+			break;
 		default:
-			res.sendStatus(500); // Send Status 500 if there are too many routes with that name.
-			console.warn(chalk.red(`Multiple routes for: ${connectionReq}.\nAll Routes:\n${urls.toString()}`)); // Log Error
-			break; // End Request
+			res.sendStatus(500);
+			console.warn(chalk.red(`Multiple routes for: ${connectionReq}.\nAll Routes:\n${urls.toString()}`));
+			break;
 	}
 }
 
-/**
- * Checks if the request is a built-in request (API).
- * @param connectionReq Hostname
- * @returns boolean based on whether the hostname is a built-in request
- */
 function isBuiltIn(connectionReq: string): boolean {
 	if (builtInRoutes.filter(route => route.url.startsWith(connectionReq)).length > 0) {
 		return true;
@@ -241,32 +182,31 @@ function isBuiltIn(connectionReq: string): boolean {
 }
 
 app.use(async (req: Request, res: Response) => {
-	const connectionReq = req.headers.host; // Get Hostname from request
+	const connectionReq = req.headers.host;
 	if (connectionReq === undefined) {
 		return res.sendStatus(400);
-	} // If there is no connection Request, Send Status 400
+	}
 
 	if (isBuiltIn(connectionReq)) {
 		return builtInRoute(connectionReq, req, res);
-	} // Check if its a Built-in Route.
+	}
 
-	console.log(`Request from: ${req.headers.host}.`); // Log the request attempt
-	await main(connectionReq, req, res); // Call main function.
+	console.log(`Request from: ${req.headers.host}.`);
+	await main(connectionReq, req, res);
 });
 
-// Start Express App on port 80
 app.listen(80, () => {
-	console.clear(); // Clear Console
-	console.log(chalk.cyan("Web Proxies:")); // Log Header for WebServers
+	console.clear();
+	console.log(chalk.cyan("Web Proxies:"));
 	routes.forEach((route, i) => {
-		console.log(`${i}. From: ${route.url}, to ${route.route}.`); // Log each route and its information
+		console.log(`${i}. From: ${route.url}, to ${route.route}.`);
 	});
-	console.log(chalk.cyan("\nDevelopment Proxies:")); // Log Header for Built-in Files
+	console.log(chalk.cyan("\nDevelopment Proxies:"));
 	builtInRoutes.forEach((route, i) => {
-		console.log(`${i}. From: ${route.url}, to ${route.context}.`); // Log each route and its information
+		console.log(`${i}. From: ${route.url}, to ${route.context}.`);
 	});
-	console.log(chalk.bgCyan("\nListening on port 80.\n")); // Log the port the app is listening on.
-	console.log("Logs"); // App Log Header
-	const line = "-".repeat(process.stdout.columns); // Create Separator line.
-	console.log(line); // Log Separator Line
+	console.log(chalk.bgCyan("\nListening on port 80.\n"));
+	console.log("Logs");
+	const line = "-".repeat(process.stdout.columns);
+	console.log(line);
 });
