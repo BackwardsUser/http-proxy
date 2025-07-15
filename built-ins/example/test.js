@@ -1,3 +1,3 @@
-export function test_library(): string {
+export function test_library() {
     return "Hello World";
 }
