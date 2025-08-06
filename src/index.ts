@@ -6,6 +6,7 @@ import {join} from 'node:path';
 import express, {type Request, type Response} from 'express';
 import http from 'node:http';
 import chalk from 'chalk';
+import cron from 'node-cron';
 
 // Initiate Packages
 const app = express();
@@ -16,8 +17,12 @@ verifyRouteFiles();
 
 // Constants
 const port = process.env.PORT ?? 80;
-const routes: Route[] = JSON.parse(readFileSync(join(routesDir, 'routes.json')).toString()) as Route[];
-const builtInRoutes: BuiltInRoute[] = JSON.parse(readFileSync(join(routesDir, 'builtin-routes.json')).toString()) as BuiltInRoute[];
+
+const updateRoutes = () => JSON.parse(readFileSync(join(routesDir, 'routes.json')).toString()) as Route[]; 
+const updateBuiltInRoutes = () => JSON.parse(readFileSync(join(routesDir, 'builtin-routes.json')).toString()) as BuiltInRoute[];
+
+const routes: Route[] = updateRoutes();
+const builtInRoutes: BuiltInRoute[] = updateBuiltInRoutes();
 
 // Functions
 function verifyRouteFiles() {
@@ -73,7 +78,7 @@ function generateExampleBuiltInRoutes() {
 
 async function getServerRes(ip: string, healthRoute = false) {
 	return new Promise(res => {
-		http.get(`${ip}/${healthRoute && 'health'}`, response => {
+		http.get(`${ip}${healthRoute ? '/health' : ''}`, response => {
 			const {statusCode} = response;
 			if (statusCode !== 404) {
 				res(true);
@@ -209,4 +214,11 @@ app.listen(port, () => {
 	console.log('Logs');
 	const line = '-'.repeat(process.stdout.columns);
 	console.log(line);
+
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-call
+	cron.schedule('0 0 * * *', () => {
+		console.log(chalk.magenta('Updating routes.'));
+		updateRoutes();
+		updateBuiltInRoutes();
+	});
 });
