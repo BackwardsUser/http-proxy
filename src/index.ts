@@ -1,79 +1,79 @@
 // Import Node Packages
-import {readFileSync, readdirSync, writeFileSync, renameSync} from "node:fs";
-import {type Route, type BuiltInRoute, type BuiltInScript} from "./types";
-import httpProxy from "http-proxy";
-import {join} from "node:path";
-import express, {type Request, type Response} from "express";
-import http from "node:http";
-import chalk from "chalk";
+import {readFileSync, readdirSync, writeFileSync, renameSync} from 'node:fs';
+import {type Route, type BuiltInRoute, type BuiltInScript} from './types';
+import httpProxy from 'http-proxy';
+import {join} from 'node:path';
+import express, {type Request, type Response} from 'express';
+import http from 'node:http';
+import chalk from 'chalk';
 
 // Initiate Packages
 const app = express();
 const proxy = httpProxy.createProxyServer();
-const routesDir = join(__dirname, "..", "routes"); // While this is a constant, it needs to exist before "verifyRouteFiles" which needs to exist before defining constants...
+const routesDir = join(__dirname, '..', 'routes'); // While this is a constant, it needs to exist before "verifyRouteFiles" which needs to exist before defining constants...
 
 verifyRouteFiles();
 
 // Constants
 const port = process.env.PORT ?? 80;
-const routes: Route[] = JSON.parse(readFileSync(join(routesDir, "routes.json")).toString()) as Route[];
-const builtInRoutes: BuiltInRoute[] = JSON.parse(readFileSync(join(routesDir, "builtin-routes.json")).toString()) as BuiltInRoute[];
+const routes: Route[] = JSON.parse(readFileSync(join(routesDir, 'routes.json')).toString()) as Route[];
+const builtInRoutes: BuiltInRoute[] = JSON.parse(readFileSync(join(routesDir, 'builtin-routes.json')).toString()) as BuiltInRoute[];
 
 // Functions
 function verifyRouteFiles() {
 	const files = readdirSync(routesDir);
-	const filterRoutes = files.filter(file => file === "routes.json");
+	const filterRoutes = files.filter(file => file === 'routes.json');
 	if (filterRoutes.length < 1) {
-		const filterExampleRoutes = files.filter(file => file === "routes.example.json");
+		const filterExampleRoutes = files.filter(file => file === 'routes.example.json');
 		if (filterExampleRoutes.length < 1) {
 			generateExampleRoutes();
 		}
 
-		renameSync(join(routesDir, "routes.example.json"), join(routesDir, "routes.json"));
+		renameSync(join(routesDir, 'routes.example.json'), join(routesDir, 'routes.json'));
 	}
 
-	const filterDevRoutes = files.filter(file => file === "builtin-routes.json");
+	const filterDevRoutes = files.filter(file => file === 'builtin-routes.json');
 	if (filterDevRoutes.length < 1) {
-		const filterExampleRoutes = files.filter(file => file === "builtin-routes.example.json");
+		const filterExampleRoutes = files.filter(file => file === 'builtin-routes.example.json');
 		if (filterExampleRoutes.length < 1) {
 			generateExampleBuiltInRoutes();
 		}
 
-		renameSync(join(routesDir, "builtin-routes.example.json"), join(routesDir, "builtin-routes.json"));
+		renameSync(join(routesDir, 'builtin-routes.example.json'), join(routesDir, 'builtin-routes.json'));
 	}
 }
 
 function generateExampleRoutes() {
 	const exampleRoutes = [{
-		url: "example.hostname.com",
-		route: "localhost:3000",
+		url: 'example.hostname.com',
+		route: 'localhost:3000',
 	},
 	{
-		url: "testing.hostname.com",
-		route: "localhost:3001",
+		url: 'testing.hostname.com',
+		route: 'localhost:3001',
 	}];
 
 	writeFileSync(
-		join(routesDir, "routes.example.json"),
+		join(routesDir, 'routes.example.json'),
 		JSON.stringify(exampleRoutes, null, 4),
 	);
 }
 
 function generateExampleBuiltInRoutes() {
 	const exampleRoutes = [{
-		url: "exampleapi.hostname.com",
-		context: "server.example.ts",
+		url: 'exampleapi.hostname.com',
+		context: 'server.example.ts',
 	}];
 
 	writeFileSync(
-		join(routesDir, "builtin-routes.example.json"),
+		join(routesDir, 'builtin-routes.example.json'),
 		JSON.stringify(exampleRoutes, null, 4),
 	);
 }
 
-async function getServerRes(ip: string) {
+async function getServerRes(ip: string, healthRoute?: boolean) {
 	return new Promise(res => {
-        http.get(`${ip}/health`, response => {
+		http.get(`${ip}/${healthRoute && 'health'}`, response => {
 			const {statusCode} = response;
 			if (statusCode === 200) {
 				res(true);
@@ -81,14 +81,14 @@ async function getServerRes(ip: string) {
 			}
 
 			res(false);
-		}).on("error", err => {
+		}).on('error', err => {
 			res(false);
 		});
 	});
 }
 
 function httpify(url: string): string {
-	if (url.startsWith("http")) {
+	if (url.startsWith('http')) {
 		return url;
 	}
 
@@ -116,7 +116,7 @@ async function main(connectionReq: string, req: Request, res: Response) {
 			console.warn(chalk.yellow(`No route setup for: ${connectionReq}.`));
 			break;
 		case 1:
-			if (await getServerRes(httpify(urls[0].route)) === false) {
+			if (await getServerRes(httpify(urls[0].route), (urls[0].healthRoute ?? false)) === false) {
 				res.sendStatus(503);
 				console.warn(chalk.red(`Cannot reach route: ${urls[0].route}.`));
 				break;
@@ -146,7 +146,7 @@ async function builtInRoute(connectionReq: string, req: Request, res: Response) 
 			const url: BuiltInRoute = urls[0];
 			console.log(`Got Built-In Request from: ${url.url}.`);
 			// eslint-disable-next-line no-case-declarations
-			const scriptsPath: string = join(__dirname, "..", "built-ins");
+			const scriptsPath: string = join(__dirname, '..', 'built-ins');
 			const files = readdirSync(scriptsPath).filter(file => file === `${url.context}.ts` || file === `${url.context}.js`);
 
 			if (files.length < 1) {
@@ -197,16 +197,16 @@ app.use(async (req: Request, res: Response) => {
 
 app.listen(port, () => {
 	console.clear();
-	console.log(chalk.cyan("Web Proxies:"));
+	console.log(chalk.cyan('Web Proxies:'));
 	routes.forEach((route, i) => {
 		console.log(`${i}. From: ${route.url}, to ${route.route}.`);
 	});
-	console.log(chalk.cyan("\nDevelopment Proxies:"));
+	console.log(chalk.cyan('\nDevelopment Proxies:'));
 	builtInRoutes.forEach((route, i) => {
 		console.log(`${i}. From: ${route.url}, to ${route.context}.`);
 	});
 	console.log(chalk.bgCyan(`\nListening on port ${port}.\n`));
-	console.log("Logs");
-	const line = "-".repeat(process.stdout.columns);
+	console.log('Logs');
+	const line = '-'.repeat(process.stdout.columns);
 	console.log(line);
 });

@@ -1,9 +1,10 @@
-import {type Request, type Response} from "express";
+import {type Request, type Response} from 'express';
 
 // Route Object Layout
 export type Route = {
 	url: string;
 	route: string;
+	healthRoute: boolean | undefined;
 };
 
 // Built-in Route Object Layout
