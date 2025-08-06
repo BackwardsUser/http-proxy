@@ -71,7 +71,7 @@ function generateExampleBuiltInRoutes() {
 	);
 }
 
-async function getServerRes(ip: string, healthRoute?: boolean) {
+async function getServerRes(ip: string, healthRoute = false) {
 	return new Promise(res => {
 		http.get(`${ip}/${healthRoute && 'health'}`, response => {
 			const {statusCode} = response;
