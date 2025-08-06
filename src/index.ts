@@ -75,7 +75,7 @@ async function getServerRes(ip: string, healthRoute?: boolean) {
 	return new Promise(res => {
 		http.get(`${ip}/${healthRoute && 'health'}`, response => {
 			const {statusCode} = response;
-			if (statusCode === 200) {
+			if (statusCode !== 404) {
 				res(true);
 				return;
 			}
